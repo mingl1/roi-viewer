@@ -24,9 +24,11 @@ export default function ROIViewer() {
     loadData();
   }, []);
 
-  useEffect(() => {
-    drawMinimap();
-  }, [outputData, currentROI]);
+ useEffect(() => {
+    if (outputData.length > 0) {
+      drawMinimap();
+    }
+  }, [outputData, currentROI, roiSize]);
 
   const loadData = async () => {
     try {
