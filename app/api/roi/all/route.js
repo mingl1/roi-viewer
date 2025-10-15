@@ -1,5 +1,7 @@
 export async function GET() {
-  const API_URL = "http://54.198.145.146:5000/api/roi/all";
+  const IP = process.env.BACKEND_IP || "http://54.198.145.146:5000";
+
+  const API_URL = `${IP}/api/roi/all`;
 
   try {
     const res = await fetch(API_URL, { cache: "no-store" });
