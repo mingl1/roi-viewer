@@ -1,8 +1,10 @@
 export async function GET(request, { params }) {
-  const { roiIdx } = await params;
+  const { roiIdx } = params;
   const { searchParams } = new URL(request.url);
   const qs = searchParams.toString();
-  const API_URL = "http://54.198.145.146:5000";
+
+  // Use environment variable if defined, otherwise fallback to default IP
+  const API_URL = process.env.BACKEND_IP || "http://54.198.145.146:5000";
   const backendUrl = `${API_URL}/api/roi/${roiIdx}/image?${qs}`;
 
   const res = await fetch(backendUrl);
