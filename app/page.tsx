@@ -68,7 +68,7 @@ const ROIViewer = () => {
     }
   };
 
-  const drawMinimap = useCallback(() => {
+  useEffect(() => {
     if (!canvasRef.current || !bounds || outputData.length === 0) return;
 
     const canvas = canvasRef.current;
@@ -115,11 +115,6 @@ const ROIViewer = () => {
     ctx.lineWidth = 1;
     ctx.strokeRect(padding, padding, width - 2 * padding, height - 2 * padding);
   }, [bounds, outputData, currentROI]);
-  
-  // ✅ Effect that runs when data or current ROI changes
-  useEffect(() => {
-    drawMinimap();
-  }, [drawMinimap]);
 
   const handleMinimapClick = (e) => {
     if (!bounds || outputData.length === 0) return;
