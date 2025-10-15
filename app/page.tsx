@@ -30,11 +30,11 @@ const ROIViewer = () => {
     setImageErrors({});
   }, [currentROI, roiSize]);
 
-  useEffect(() => {
-    if (outputData.length > 0) {
-      drawMinimap();
-    }
-  }, [outputData, currentROI, roiSize]);
+ // useEffect(() => {
+   // if (outputData.length > 0) {
+     // drawMinimap();
+    //}
+  //}, [outputData, currentROI, roiSize]);
 
   const loadData = async () => {
     try {
