@@ -19,6 +19,7 @@ const ROIViewer = () => {
   const [error, setError] = useState(null);
   const [stats, setStats] = useState(null);
   const [imageErrors, setImageErrors] = useState({});
+  const [bounds, setBounds] = useState(null);
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -30,7 +31,7 @@ const ROIViewer = () => {
     setImageErrors({});
   }, [currentROI, roiSize]);
 
-  const loadData = async () => {
+ const loadData = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -39,7 +40,20 @@ const ROIViewer = () => {
       if (!response.ok) throw new Error("Failed to load ROI data");
 
       const data = await response.json();
-      setOutputData(data.data);
+      const rois = data.data || [];
+      setOutputData(rois);
+
+      // ✅ compute bounds once when data is loaded
+      if (rois.length > 0) {
+        const xs = rois.map((d) => d.x);
+        const ys = rois.map((d) => d.y);
+        setBounds({
+          minX: Math.min(...xs),
+          maxX: Math.max(...xs),
+          minY: Math.min(...ys),
+          maxY: Math.max(...ys),
+        });
+      }
 
       const statsResponse = await fetch(`${API_URL}/api/stats`);
       if (statsResponse.ok) {
@@ -54,14 +68,14 @@ const ROIViewer = () => {
     }
   };
 
-const drawMinimap = useCallback(() => {
-    console.log(outputData.length);
-    if (!canvasRef.current || outputData.length < 8) return;
+  const drawMinimap = useCallback(() => {
+    if (!canvasRef.current || !bounds || outputData.length === 0) return;
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    const { minX, maxX, minY, maxY } = bounds;
     const width = canvas.width;
     const height = canvas.height;
 
@@ -69,21 +83,13 @@ const drawMinimap = useCallback(() => {
     ctx.fillStyle = "#1f2937";
     ctx.fillRect(0, 0, width, height);
 
-    const xs = outputData.map((d) => d.x);
-    const ys = outputData.map((d) => d.y);
-    const minX = Math.min(...xs);
-    const maxX = Math.max(...xs);
-    const minY = Math.min(...ys);
-    const maxY = Math.max(...ys);
-
     const padding = 20;
     const scaleX = (width - 2 * padding) / (maxX - minX || 1);
     const scaleY = (height - 2 * padding) / (maxY - minY || 1);
     const scale = Math.min(scaleX, scaleY);
 
     const offsetX = padding + (width - 2 * padding - (maxX - minX) * scale) / 2;
-    const offsetY =
-      padding + (height - 2 * padding - (maxY - minY) * scale) / 2;
+    const offsetY = padding + (height - 2 * padding - (maxY - minY) * scale) / 2;
 
     outputData.forEach((roi, idx) => {
       const x = offsetX + (roi.x - minX) * scale;
@@ -108,8 +114,8 @@ const drawMinimap = useCallback(() => {
     ctx.strokeStyle = "#4b5563";
     ctx.lineWidth = 1;
     ctx.strokeRect(padding, padding, width - 2 * padding, height - 2 * padding);
-  }, [outputData, currentROI, roiSize]);
-
+  }, [bounds, outputData, currentROI]);
+  
   // ✅ Effect that runs when data or current ROI changes
   useEffect(() => {
     drawMinimap();
