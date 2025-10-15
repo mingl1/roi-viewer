@@ -55,7 +55,8 @@ const ROIViewer = () => {
   };
 
 const drawMinimap = useCallback(() => {
-    if (!canvasRef.current || outputData.length === 0) return;
+    console.log(outputData.length);
+    if (!canvasRef.current || outputData.length < 8) return;
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
