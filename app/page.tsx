@@ -11,20 +11,26 @@ import {
 
 const API_URL = "";
 
-export default function ROIViewer() {
+const ROIViewer = () => {
   const [outputData, setOutputData] = useState([]);
   const [currentROI, setCurrentROI] = useState(0);
   const [roiSize, setRoiSize] = useState(5);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [stats, setStats] = useState(null);
+  const [imageErrors, setImageErrors] = useState({});
   const canvasRef = useRef(null);
 
   useEffect(() => {
     loadData();
   }, []);
 
- useEffect(() => {
+  useEffect(() => {
+    // Reset image errors when ROI or size changes
+    setImageErrors({});
+  }, [currentROI, roiSize]);
+
+  useEffect(() => {
     if (outputData.length > 0) {
       drawMinimap();
     }
@@ -59,9 +65,12 @@ export default function ROIViewer() {
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    
     const width = canvas.width;
     const height = canvas.height;
 
+    ctx.clearRect(0, 0, width, height);
     ctx.fillStyle = "#1f2937";
     ctx.fillRect(0, 0, width, height);
 
@@ -188,24 +197,22 @@ export default function ROIViewer() {
               >
                 {col < channelsPerRow ? (
                   <div className="w-full h-full relative">
-                    {outputData[currentROI] ? (
+                    {outputData[currentROI] && !imageErrors[`${currentROI}-${row}-${col}`] ? (
                       <img
                         src={getImageUrl(currentROI, row, col)}
                         alt={`ROI ${currentROI} Row ${row} Ch ${col}`}
                         className="w-full h-full object-contain"
                         style={{ imageRendering: "pixelated" }}
-                        onError={(e) => {
-                          e.target.style.display = "none";
-                          const parent = e.target.parentElement;
-                          if (parent) {
-                            parent.innerHTML =
-                              '<div class="flex items-center justify-center h-full text-gray-500 text-xs">No image</div>';
-                          }
+                        onError={() => {
+                          setImageErrors(prev => ({
+                            ...prev,
+                            [`${currentROI}-${row}-${col}`]: true
+                          }));
                         }}
                       />
                     ) : (
                       <div className="flex items-center justify-center h-full text-gray-500 text-xs">
-                        No data
+                        {outputData[currentROI] ? "No image" : "No data"}
                       </div>
                     )}
                     <div className="absolute top-1 left-1 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
@@ -485,4 +492,6 @@ export default function ROIViewer() {
       </div>
     </div>
   );
-}
+};
+
+export default ROIViewer;
