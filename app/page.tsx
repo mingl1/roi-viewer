@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef,useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   ZoomIn,
   ZoomOut,
@@ -19,8 +19,8 @@ const ROIViewer = () => {
   const [error, setError] = useState(null);
   const [stats, setStats] = useState(null);
   const [imageErrors, setImageErrors] = useState({});
-  const [bounds, setBounds] = useState(null);
   const canvasRef = useRef(null);
+  const od = useRef(null);
 
   useEffect(() => {
     loadData();
@@ -31,7 +31,13 @@ const ROIViewer = () => {
     setImageErrors({});
   }, [currentROI, roiSize]);
 
- const loadData = async () => {
+  useEffect(() => {
+    if (outputData.length > 0) {
+      drawMinimap();
+    }
+  }, [currentROI, roiSize]);
+
+  const loadData = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -40,26 +46,21 @@ const ROIViewer = () => {
       if (!response.ok) throw new Error("Failed to load ROI data");
 
       const data = await response.json();
-      const rois = data.data || [];
-      setOutputData(rois);
-
-      // ✅ compute bounds once when data is loaded
-      if (rois.length > 0) {
-        const xs = rois.map((d) => d.x);
-        const ys = rois.map((d) => d.y);
-        setBounds({
-          minX: Math.min(...xs),
-          maxX: Math.max(...xs),
-          minY: Math.min(...ys),
-          maxY: Math.max(...ys),
-        });
-      }
+      setOutputData(data.data);
 
       const statsResponse = await fetch(`${API_URL}/api/stats`);
       if (statsResponse.ok) {
         const statsData = await statsResponse.json();
         setStats(statsData);
       }
+        const od = data.data
+        const xs = od.map((d) => d.x);
+        const ys = od.map((d) => d.y);
+        const minX = Math.min(...xs);
+        const maxX = Math.max(...xs);
+        const minY = Math.min(...ys);
+        const maxY = Math.max(...ys);
+      od.current = {minX,minY,maxX,maxY}
 
       setLoading(false);
     } catch (err) {
@@ -68,20 +69,21 @@ const ROIViewer = () => {
     }
   };
 
-  useEffect(() => {
-    if (!canvasRef.current || !bounds || outputData.length === 0) return;
+  const drawMinimap = () => {
+    if (!canvasRef.current || outputData.length === 0) return;
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-
-    const { minX, maxX, minY, maxY } = bounds;
+    
     const width = canvas.width;
     const height = canvas.height;
 
     ctx.clearRect(0, 0, width, height);
     ctx.fillStyle = "#1f2937";
     ctx.fillRect(0, 0, width, height);
+    const {minX,minY,maxX,maxY} = od.current;
+
 
     const padding = 20;
     const scaleX = (width - 2 * padding) / (maxX - minX || 1);
@@ -89,7 +91,8 @@ const ROIViewer = () => {
     const scale = Math.min(scaleX, scaleY);
 
     const offsetX = padding + (width - 2 * padding - (maxX - minX) * scale) / 2;
-    const offsetY = padding + (height - 2 * padding - (maxY - minY) * scale) / 2;
+    const offsetY =
+      padding + (height - 2 * padding - (maxY - minY) * scale) / 2;
 
     outputData.forEach((roi, idx) => {
       const x = offsetX + (roi.x - minX) * scale;
@@ -114,18 +117,25 @@ const ROIViewer = () => {
     ctx.strokeStyle = "#4b5563";
     ctx.lineWidth = 1;
     ctx.strokeRect(padding, padding, width - 2 * padding, height - 2 * padding);
-  }, [bounds, outputData, currentROI]);
+  };
 
   const handleMinimapClick = (e) => {
-    if (!bounds || outputData.length === 0) return;
+    if (outputData.length === 0) return;
 
-    const { minX, maxX, minY, maxY } = bounds;
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top;
+
     const width = canvas.width;
     const height = canvas.height;
+
+    const xs = outputData.map((d) => d.x);
+    const ys = outputData.map((d) => d.y);
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
 
     const padding = 20;
     const scaleX = (width - 2 * padding) / (maxX - minX || 1);
@@ -133,7 +143,8 @@ const ROIViewer = () => {
     const scale = Math.min(scaleX, scaleY);
 
     const offsetX = padding + (width - 2 * padding - (maxX - minX) * scale) / 2;
-    const offsetY = padding + (height - 2 * padding - (maxY - minY) * scale) / 2;
+    const offsetY =
+      padding + (height - 2 * padding - (maxY - minY) * scale) / 2;
 
     const worldX = (clickX - offsetX) / scale + minX;
     const worldY = (clickY - offsetY) / scale + minY;
@@ -142,7 +153,9 @@ const ROIViewer = () => {
     let nearestDist = Infinity;
 
     outputData.forEach((roi, idx) => {
-      const dist = Math.hypot(roi.x - worldX, roi.y - worldY);
+      const dist = Math.sqrt(
+        Math.pow(roi.x - worldX, 2) + Math.pow(roi.y - worldY, 2)
+      );
       if (dist < nearestDist) {
         nearestDist = dist;
         nearestIdx = idx;
