@@ -53,14 +53,7 @@ const ROIViewer = () => {
         const statsData = await statsResponse.json();
         setStats(statsData);
       }
-        const od = data.data
-        const xs = od.map((d) => d.x);
-        const ys = od.map((d) => d.y);
-        const minX = Math.min(...xs);
-        const maxX = Math.max(...xs);
-        const minY = Math.min(...ys);
-        const maxY = Math.max(...ys);
-      od.current = {minX,minY,maxX,maxY}
+
 
       setLoading(false);
     } catch (err) {
