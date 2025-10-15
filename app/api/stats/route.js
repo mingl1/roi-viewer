@@ -1,5 +1,6 @@
 export async function GET() {
-  const API_URL = "http://54.198.145.146:5000/api/stats";
+  const IP = process.env.BACKEND_IP || "http://54.198.145.146:5000";
+  const API_URL = `${IP}/api/stats`;
 
   try {
     const res = await fetch(API_URL, { cache: "no-store" });
