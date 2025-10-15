@@ -122,22 +122,15 @@ const ROIViewer = () => {
   }, [drawMinimap]);
 
   const handleMinimapClick = (e) => {
-    if (outputData.length === 0) return;
+    if (!bounds || outputData.length === 0) return;
 
+    const { minX, maxX, minY, maxY } = bounds;
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top;
-
     const width = canvas.width;
     const height = canvas.height;
-
-    const xs = outputData.map((d) => d.x);
-    const ys = outputData.map((d) => d.y);
-    const minX = Math.min(...xs);
-    const maxX = Math.max(...xs);
-    const minY = Math.min(...ys);
-    const maxY = Math.max(...ys);
 
     const padding = 20;
     const scaleX = (width - 2 * padding) / (maxX - minX || 1);
@@ -145,8 +138,7 @@ const ROIViewer = () => {
     const scale = Math.min(scaleX, scaleY);
 
     const offsetX = padding + (width - 2 * padding - (maxX - minX) * scale) / 2;
-    const offsetY =
-      padding + (height - 2 * padding - (maxY - minY) * scale) / 2;
+    const offsetY = padding + (height - 2 * padding - (maxY - minY) * scale) / 2;
 
     const worldX = (clickX - offsetX) / scale + minX;
     const worldY = (clickY - offsetY) / scale + minY;
@@ -155,9 +147,7 @@ const ROIViewer = () => {
     let nearestDist = Infinity;
 
     outputData.forEach((roi, idx) => {
-      const dist = Math.sqrt(
-        Math.pow(roi.x - worldX, 2) + Math.pow(roi.y - worldY, 2)
-      );
+      const dist = Math.hypot(roi.x - worldX, roi.y - worldY);
       if (dist < nearestDist) {
         nearestDist = dist;
         nearestIdx = idx;
