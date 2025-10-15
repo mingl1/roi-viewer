@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef,useCallback } from "react";
 import {
   ZoomIn,
   ZoomOut,
@@ -30,12 +30,6 @@ const ROIViewer = () => {
     setImageErrors({});
   }, [currentROI, roiSize]);
 
- // useEffect(() => {
-   // if (outputData.length > 0) {
-     // drawMinimap();
-    //}
-  //}, [outputData, currentROI, roiSize]);
-
   const loadData = async () => {
     try {
       setLoading(true);
@@ -60,13 +54,13 @@ const ROIViewer = () => {
     }
   };
 
-  const drawMinimap = () => {
+const drawMinimap = useCallback(() => {
     if (!canvasRef.current || outputData.length === 0) return;
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    
+
     const width = canvas.width;
     const height = canvas.height;
 
@@ -113,7 +107,12 @@ const ROIViewer = () => {
     ctx.strokeStyle = "#4b5563";
     ctx.lineWidth = 1;
     ctx.strokeRect(padding, padding, width - 2 * padding, height - 2 * padding);
-  };
+  }, [outputData, currentROI, roiSize]);
+
+  // ✅ Effect that runs when data or current ROI changes
+  useEffect(() => {
+    drawMinimap();
+  }, [drawMinimap]);
 
   const handleMinimapClick = (e) => {
     if (outputData.length === 0) return;
