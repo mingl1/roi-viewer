@@ -9,7 +9,7 @@ import {
   Shuffle,
 } from "lucide-react";
 
-const API_URL = "http://localhost:5000";
+const API_URL = "";
 
 export default function ROIViewer() {
   const [outputData, setOutputData] = useState([]);
@@ -166,9 +166,8 @@ export default function ROIViewer() {
     setRoiSize(roiSize + 2);
   };
 
-  const getImageUrl = (roiIdx, row, channel) => {
-    return `${API_URL}/api/roi/${roiIdx}/image?row=${row}&channel=${channel}&size=${roiSize}`;
-  };
+  const getImageUrl = (roiIdx, row, channel) =>
+    `${API_URL}/api/roi/${roiIdx}/image?row=${row}&channel=${channel}&size=${roiSize}`;
 
   const renderImageGrid = () => {
     const rows = 2;
